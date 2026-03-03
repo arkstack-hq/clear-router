@@ -342,7 +342,7 @@ File: `tests/typescript.test.ts`
 ```typescript
 import request from 'supertest';
 import express, { Router } from 'express';
-import Router, { HttpContext, RouteInfo } from '../types/index';
+import Router, { HttpContext } from '../types/index';
 
 describe('Express Routing - TypeScript', () => {
   let app: express.Application;
@@ -376,7 +376,7 @@ describe('Express Routing - TypeScript', () => {
   test('should type check route info', () => {
     Router.get('/info', ({ res }: HttpContext) => res.send('ok'));
 
-    const routes: RouteInfo[] = Router.allRoutes();
+    const routes = Router.allRoutes();
     expect(routes[0].path).toBe('/info');
     expect(routes[0].handlerType).toBe('function');
   });

@@ -1,5 +1,5 @@
 import { ClearRequest } from 'src/ClearRequest'
-import { ControllerAction, HttpMethod, RouteInfo } from 'types/basic'
+import { ControllerAction, HttpMethod } from 'types/basic'
 import { H3App, Handler, HttpContext, Middleware, RouteHandler } from 'types/h3'
 
 import { getQuery, getRouterParams, readBody, type H3 } from 'h3'
@@ -221,13 +221,8 @@ export class Router {
      * Get all registered routes with their information
      * @returns Array of route information objects
      */
-    static allRoutes (): RouteInfo[] {
-        return this.routes.map(route => ({
-            methods: route.methods,
-            path: route.path,
-            middlewareCount: route.middlewares.length,
-            handlerType: typeof route.handler === 'function' ? 'function' : 'controller'
-        }))
+    static allRoutes () {
+        return this.routes
     }
 
     /**

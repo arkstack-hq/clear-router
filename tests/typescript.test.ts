@@ -7,7 +7,6 @@ import { H3App } from 'types/h3'
 import { NextFunction as H3NextFunction } from '../types/h3'
 import H3Router from '../src/h3/router'
 import { HttpContext } from 'types/express'
-import type { RouteInfo } from '../types'
 import Router from '../src/express/router'
 import request from 'supertest'
 
@@ -52,10 +51,55 @@ describe('Express Routing - TypeScript', () => {
             res.send('created')
         })
 
-        const routes: RouteInfo[] = Router.allRoutes()
+        const routes = Router.allRoutes()
         expect(routes[0].path).toBe('/info')
         expect(routes[0].handlerType).toBe('function')
         expect(routes[1].methods).toContain('post')
+    })
+
+    test('should expose controller metadata in express route info', async () => {
+        class UserController {
+            static show ({ res }: HttpContext): void {
+                res.send('ok')
+            }
+        }
+
+        Router.get('/users/:id', [UserController, 'show'])
+        Router.get('/users/:id/books', ({ res }) => res.send('books'))
+
+        const routes = Router.allRoutes()
+        expect(routes[0].handlerType).toBe('controller')
+        expect(routes[0].controllerName).toBe('UserController')
+        expect(routes[0].actionName).toBe('show')
+        expect(routes[0].middlewareCount).toBe(0)
+        expect(routes[1].handlerType).toBe('function')
+        expect(routes[1].controllerName).toBeUndefined()
+        expect(routes[1].actionName).toBe('Function')
+        expect(routes[1].middlewareCount).toBe(0)
+    })
+
+    test('should include route on clearRequest for express controllers', async () => {
+        class UserController extends Controller<HttpContext> {
+            show (ctx: HttpContext, clearRequest: any): void {
+                ctx.res.json({
+                    routePath: clearRequest?.route?.path,
+                    controllerName: clearRequest?.route?.controllerName,
+                    actionName: clearRequest?.route?.actionName,
+                })
+            }
+        }
+
+        Router.get('/users/:id', [UserController, 'show'])
+
+        await setupApp()
+
+        const response = await request(app).get('/users/123')
+        expect(response.status).toBe(200)
+        expect(response.body).toMatchObject({
+            routePath: '/users/:id',
+            controllerName: 'UserController',
+            actionName: 'show',
+        })
     })
 
     test('should type check controller', async () => {
@@ -283,10 +327,52 @@ describe('H3 Routing - TypeScript', () => {
             ctx.res.statusText = 'Created'
         })
 
-        const routes: RouteInfo[] = H3Router.allRoutes()
+        const routes = H3Router.allRoutes()
         expect(routes[0].path).toBe('/info')
         expect(routes[0].handlerType).toBe('function')
         expect(routes[1].methods).toContain('post')
+    })
+
+    test('should expose controller metadata in h3 route info', async () => {
+        class UserController {
+            static show () {
+                return { ok: true }
+            }
+        }
+
+        H3Router.get('/users/:id', [UserController, 'show'])
+
+        const routes = H3Router.allRoutes()
+        expect(routes[0].handlerType).toBe('controller')
+        expect(routes[0].controllerName).toBe('UserController')
+        expect(routes[0].actionName).toBe('show')
+        expect(routes[0].middlewareCount).toBe(0)
+    })
+
+    test('should include route on clearRequest for h3 controllers', async () => {
+        class UserController extends Controller<H3Event> {
+            show (event: H3Event, clearRequest: any) {
+                return {
+                    routePath: clearRequest?.route?.path,
+                    controllerName: clearRequest?.route?.controllerName,
+                    actionName: clearRequest?.route?.actionName,
+                }
+            }
+        }
+
+        H3Router.get('/users/:id', [UserController, 'show'])
+
+        setupApp()
+
+        const response = await router
+            .fetch(new global.Request(new URL('http://localhost/users/123')))
+            .then(res => res.json())
+
+        expect(response).toMatchObject({
+            routePath: '/users/:id',
+            controllerName: 'UserController',
+            actionName: 'show',
+        })
     })
 
     test('should type check controller', async () => {

@@ -1,4 +1,4 @@
-import { ControllerAction, HttpMethod, RouteInfo } from 'types/basic'
+import { ControllerAction, HttpMethod } from 'types/basic'
 import { Handler, HttpContext, Middleware, RouteHandler } from 'types/express'
 
 import { ClearRequest } from 'src/ClearRequest'
@@ -222,13 +222,8 @@ export class Router {
      * Get all registered routes with their information
      * @returns Array of route information objects
      */
-    static allRoutes (): RouteInfo[] {
-        return this.routes.map(route => ({
-            methods: route.methods,
-            path: route.path,
-            middlewareCount: route.middlewares.length,
-            handlerType: typeof route.handler === 'function' ? 'function' : 'controller'
-        }))
+    static allRoutes () {
+        return this.routes
     }
 
     /**

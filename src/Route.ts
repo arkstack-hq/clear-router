@@ -15,6 +15,10 @@ export class Route<X = any, M = HMiddleware | EMiddleware> {
     path: string
     handler: Handler
     middlewares: M[]
+    controllerName?: string
+    actionName?: string
+    handlerType: 'function' | 'controller'
+    middlewareCount: number
 
     constructor(
         methods: HttpMethod[],
@@ -26,5 +30,9 @@ export class Route<X = any, M = HMiddleware | EMiddleware> {
         this.path = path
         this.handler = handler
         this.middlewares = middlewares
+        this.handlerType = Array.isArray(handler) ? 'controller' : 'function'
+        this.middlewareCount = middlewares.length
+        this.controllerName = Array.isArray(handler) ? handler[0]?.name : undefined
+        this.actionName = Array.isArray(handler) ? handler[1] : typeof handler === 'function' ? handler.constructor.name ?? handler.name : undefined
     }
 }

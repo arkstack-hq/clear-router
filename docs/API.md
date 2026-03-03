@@ -260,16 +260,20 @@ Router.middleware([authMiddleware, logMiddleware], () => {
 
 Get information about all registered routes.
 
-**Returns:** Array<RouteInfo>
+**Returns:** Array<Route>
 
-**RouteInfo Object:**
+**Route Object:**
 
 ```javascript
 {
   methods: string[],        // HTTP methods
   path: string,             // Full route path
   middlewareCount: number,  // Number of middlewares
-  handlerType: string       // 'function' or 'controller'
+  handlerType: string,       // 'function' or 'controller'
+  handler: Handler           // Original handler definition
+  middlewares: Middleware[]  // Array of middleware functions
+  controllerName?: string     // Controller class name (if applicable)
+  actionName?: string         // Controller method name (if applicable)
 }
 ```
 
