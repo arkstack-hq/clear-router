@@ -28,10 +28,14 @@
     "license": "MIT",
     "author": "3m1n1nce <3m1n1nce@toneflix.net>",
     "type": "module",
-    "main": "dist/express/routes.cjs",
-    "module": "dist/express/routes.mjs",
-    "types": "dist/express/routes.d.mts",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
     "exports": {
+        ".": {
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        },
         "./express": {
             "import": "./dist/express/index.mjs",
             "require": "./dist/express/index.cjs"
