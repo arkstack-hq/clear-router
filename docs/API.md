@@ -207,8 +207,10 @@ Group routes under a common prefix with optional middlewares.
 **Parameters:**
 
 - `prefix` (string): URL prefix for all routes in the group
-- `callback` (Function): Function containing route definitions
+- `callback` (Function): Sync or async function containing route definitions
 - `middlewares` (Function[]): Optional middleware functions
+
+**Returns:** Promise<void>
 
 **Example:**
 
@@ -221,6 +223,12 @@ Router.group(
   },
   [apiMiddleware],
 );
+
+// Async group callback
+await Router.group('/api', async () => {
+  await loadRoutes();
+  Router.get('/status', handler); // Becomes: /api/status
+});
 
 // Nested groups
 Router.group('/api', () => {

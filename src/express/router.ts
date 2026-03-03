@@ -180,7 +180,11 @@ export class Router {
      * @param callback - Function containing route definitions
      * @param middlewares - Middleware functions applied to all routes in group
      */
-    static group (prefix: string, callback: () => void, middlewares?: Middleware[]): void {
+    static async group (
+        prefix: string,
+        callback: () => void | Promise<void>,
+        middlewares?: Middleware[]
+    ): Promise<void> {
         const previousPrefix = this.prefix
         const previousMiddlewares = this.groupMiddlewares
 
@@ -191,10 +195,12 @@ export class Router {
         this.prefix = this.normalizePath(fullPrefix)
         this.groupMiddlewares = [...previousMiddlewares, ...(middlewares || [])]
 
-        callback()
-
-        this.prefix = previousPrefix
-        this.groupMiddlewares = previousMiddlewares
+        try {
+            await Promise.resolve(callback())
+        } finally {
+            this.prefix = previousPrefix
+            this.groupMiddlewares = previousMiddlewares
+        }
     }
 
     /**

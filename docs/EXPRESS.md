@@ -182,6 +182,15 @@ Router.group('/admin', () => {
 });
 ```
 
+Async group callbacks are also supported:
+
+```javascript
+await Router.group('/api', async () => {
+  await loadRoutes();
+  Router.get('/status', ({ res }) => res.json({ ok: true }));
+});
+```
+
 With middleware:
 
 ```javascript

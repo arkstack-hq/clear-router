@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - [2.1.5] - 2026-03-03
+
+### Added
+
+- Added support for async group callbacks in Express and H3 routers (`await Router.group(...)`).
+
 ## [2.1.1] - 2026-03-03
 
 ### Added
@@ -231,7 +237,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Optimized route registration performance
 
-## [1.0.0] - 2024-11-01
+## [1.0.0] (New API) - 2024-11-01
 
 ### Added
 

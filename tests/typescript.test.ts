@@ -202,6 +202,21 @@ describe('Express Routing - TypeScript', () => {
         expect(response.body.status).toBe('operational')
     })
 
+    test('should support async grouped routes', async () => {
+        await Router.group('/api', async () => {
+            await new Promise<void>(resolve => setTimeout(resolve, 5))
+            Router.get('/async-group', ({ res }: HttpContext) => {
+                res.json({ grouped: true })
+            })
+        })
+
+        await setupApp()
+
+        const response = await request(app).get('/api/async-group')
+        expect(response.status).toBe(200)
+        expect(response.body.grouped).toBe(true)
+    })
+
     test('should handle typed error in middleware', async () => {
         const errorMiddleware = (
             req: Request,
@@ -434,6 +449,22 @@ describe('H3 Routing - TypeScript', () => {
             .fetch(new global.Request(new URL('http://localhost/api/status'), { method: 'GET' }))
             .then(res => res.json())
         expect(response.status).toBe('operational')
+    })
+
+    test('should support async grouped routes', async () => {
+        await H3Router.group('/api', async () => {
+            await new Promise<void>(resolve => setTimeout(resolve, 5))
+            H3Router.get('/async-group', () => {
+                return { grouped: true }
+            })
+        })
+
+        setupApp()
+
+        const response = await router
+            .fetch(new global.Request(new URL('http://localhost/api/async-group'), { method: 'GET' }))
+            .then(res => res.json())
+        expect(response.grouped).toBe(true)
     })
 
     test('should handle typed error in middleware', async () => {
