@@ -1,5 +1,6 @@
+import { cpSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+
 import { defineConfig } from 'tsdown'
-import { rmSync } from 'node:fs'
 
 export default defineConfig([
   {
@@ -8,35 +9,23 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     clean: true,
-    // exports: true,
+    exports: true,
     outDir: 'dist',
-    outExtensions (ctx) {
-      return {
-        dts: '.d.ts',
-        js: ctx.format === 'cjs' ? '.cjs' : '.mjs',
-      }
-    }
   },
   {
     dts: true,
     clean: true,
-    // exports: true,
+    exports: true,
     tsconfig: 'tsconfig.json',
     entry: ['src/express/index.ts', 'src/h3/index.ts'],
     platform: 'node',
     outDir: 'dist',
     format: ['esm', 'cjs'],
     skipNodeModulesBundle: true,
-    outExtensions (ctx) {
-      return {
-        dts: '.d.ts',
-        js: ctx.format === 'cjs' ? '.cjs' : '.mjs',
-      }
-    }
   },
   {
     clean: true,
-    // exports: true,
+    exports: true,
     unbundle: true,
     entry: {
       'types/*': [
@@ -50,12 +39,15 @@ export default defineConfig([
     outDir: 'dist',
     format: ['esm'],
     onSuccess (rsc) {
+      for (const n of ['ClearRequest', 'Route']) {
+        cpSync(rsc.outDir + `/src/${n}.d.mts`, rsc.outDir + `/types/${n}.d.mts`)
+      }
+      for (const d of Object.keys(rsc.entry)) {
+        const p = d.replace('types', `${rsc.outDir}/types`) + '.d.mts'
+        const code = readFileSync(p, 'utf-8')
+        writeFileSync(p, code.replace(/\.\.\/src\//g, './'), 'utf-8')
+      }
       rmSync(rsc.outDir + '/src', { recursive: true })
     },
-    outExtensions () {
-      return {
-        dts: '.d.ts',
-      }
-    }
   }
 ])
