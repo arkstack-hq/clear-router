@@ -1,5 +1,5 @@
 import { defineConfig } from 'tsdown'
-import { rmdirSync } from 'node:fs'
+import { rmSync } from 'node:fs'
 
 export default defineConfig([
   {
@@ -8,7 +8,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     clean: true,
-    exports: true,
+    // exports: true,
     outDir: 'dist',
     outExtensions (ctx) {
       return {
@@ -18,8 +18,9 @@ export default defineConfig([
     }
   },
   {
+    dts: true,
     clean: true,
-    exports: true,
+    // exports: true,
     tsconfig: 'tsconfig.json',
     entry: ['src/express/index.ts', 'src/h3/index.ts'],
     platform: 'node',
@@ -35,7 +36,7 @@ export default defineConfig([
   },
   {
     clean: true,
-    exports: true,
+    // exports: true,
     unbundle: true,
     entry: {
       'types/*': [
@@ -49,7 +50,7 @@ export default defineConfig([
     outDir: 'dist',
     format: ['esm'],
     onSuccess (rsc) {
-      rmdirSync(rsc.outDir + '/src', { recursive: true })
+      rmSync(rsc.outDir + '/src', { recursive: true })
     },
     outExtensions () {
       return {
