@@ -1,5 +1,3 @@
-import { Route } from 'src'
-
 /**
  * Controller method reference
  */
