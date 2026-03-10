@@ -20,6 +20,16 @@ export class Router {
     static routes: Array<Route<HttpContext, Middleware>> = []
 
     /**
+     * Mapping of routes by path and method for quick lookup.
+     */
+    static routesByPathMethod: Record<string, Route<HttpContext, Middleware>> = {}
+
+    /**
+     * Mapping of routes by method for quick lookup.
+     */
+    static routesByMethod: { [method in Uppercase<HttpMethod>]?: Array<Route<HttpContext, Middleware>> } = {}
+
+    /**
      * Current route prefix
      */
     static prefix: string = ''
@@ -59,15 +69,34 @@ export class Router {
         handler: Handler,
         middlewares?: Middleware[]
     ): void {
-        const methodArray = Array.isArray(methods) ? methods : [methods]
+        methods = Array.isArray(methods) ? methods : [methods]
         const fullPath = this.normalizePath(`${this.prefix}/${path}`)
 
-        this.routes.push(new Route(
-            methodArray,
+        const route = new Route<HttpContext, Middleware>(
+            methods.includes('options') ? methods : methods.concat('options'),
             fullPath,
             handler as never,
             [...this.globalMiddlewares, ...this.groupMiddlewares, ...(middlewares || [])]
-        ))
+        )
+
+        if (
+            !methods.includes('options') &&
+            !this.routesByPathMethod[`OPTIONS ${fullPath}`]) {
+            this.options(path, ({ res }) => {
+                res.set('Allow', 'GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD')
+                res.sendStatus(204)
+            })
+        }
+
+        this.routes.push(route)
+
+        for (const method of methods.map(m => m.toUpperCase() as Uppercase<HttpMethod>)) {
+            this.routesByPathMethod[`${method.toUpperCase()} ${fullPath}`] = route
+            if (!this.routesByMethod[method]) {
+                this.routesByMethod[method] = []
+            }
+            this.routesByMethod[method].push(route)
+        }
     }
 
     /**
@@ -222,8 +251,22 @@ export class Router {
      * Get all registered routes with their information
      * @returns Array of route information objects
      */
-    static allRoutes () {
-        return this.routes
+    static allRoutes (type?: 'path'): Record<string, Route<HttpContext, Middleware>>
+    static allRoutes (type?: 'method'): { [method in Uppercase<HttpMethod>]?: Array<Route<HttpContext, Middleware>> }
+    static allRoutes (type?: 'method'): Array<Route<HttpContext, Middleware>>
+    static allRoutes (type?: 'method' | 'path'):
+        Array<Route<HttpContext, Middleware>> |
+        Record<string, Route<HttpContext, Middleware>> |
+        Record<string, Array<Route<HttpContext, Middleware>>> {
+        if (type === 'method') {
+            return this.routesByMethod
+        }
+
+        if (type === 'path') {
+            return this.routesByPathMethod
+        }
+
+        return this.routes.filter(e => e.methods.length > 1 || e.methods[0] !== 'options')
     }
 
     /**
@@ -290,6 +333,8 @@ export class Router {
                     'options',
                     'head',
                 ]
+
+                if (method === 'options' && route.methods.length > 1) continue
 
                 if (!allowedMethods.includes(method)) {
                     const error = new Error(
