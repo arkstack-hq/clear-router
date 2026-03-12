@@ -4,6 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/clear-router.svg)](https://www.npmjs.com/package/clear-router)
 [![License](https://img.shields.io/npm/l/clear-router.svg)](https://github.com/toneflix/clear-router/blob/main/LICENSE)
 [![Publish to NPM](https://github.com/arkstack-hq/clear-router/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/arkstack-hq/clear-router/actions/workflows/npm-publish.yml)
+[![Run Tests](https://github.com/arkstack-hq/clear-router/actions/workflows/ci.yml/badge.svg)](https://github.com/arkstack-hq/clear-router/actions/workflows/ci.yml)
 
 Laravel-style routing system for H3 and Express.js, with clean route definitions, middleware support, controller bindings and full TypeScript support.
 
