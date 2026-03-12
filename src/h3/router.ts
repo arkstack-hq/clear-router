@@ -1,5 +1,5 @@
 import { ClearRequest } from 'src/ClearRequest'
-import { ControllerAction, HttpMethod } from 'types/basic'
+import { ApiResourceMiddleware, ControllerAction, HttpMethod } from 'types/basic'
 import { H3App, Handler, HttpContext, Middleware, RouteHandler } from 'types/h3'
 
 import { getQuery, getRouterParams, readBody, type H3 } from 'h3'
@@ -66,9 +66,14 @@ export class Router {
         methods: HttpMethod | HttpMethod[],
         path: string,
         handler: Handler,
-        middlewares?: Middleware[]
+        middlewares?: Middleware[] | Middleware
     ): void {
         methods = Array.isArray(methods) ? methods : [methods]
+        middlewares = middlewares
+            ? (Array.isArray(middlewares) ? middlewares : [middlewares])
+            : undefined
+
+
         const fullPath = this.normalizePath(`${this.prefix}/${path}`)
 
         const route = new Route<HttpContext, Middleware>(
@@ -107,7 +112,11 @@ export class Router {
     static apiResource (
         basePath: string,
         controller: any,
-        options?: { only?: ControllerAction[], except?: ControllerAction[] }
+        options?: {
+            only?: ControllerAction[],
+            except?: ControllerAction[],
+            middlewares?: ApiResourceMiddleware<Middleware>,
+        }
     ): void {
         const actions = {
             index: { method: 'get', path: '/' },
@@ -126,7 +135,17 @@ export class Router {
             if (except.includes(action)) continue
             if (typeof preController[action] === 'function') {
                 const { method, path } = actions[action]
-                this.add(method as HttpMethod, `${basePath}${path}`, [controller, action])
+
+                const actionMiddlewares = typeof options?.middlewares === 'object' && !Array.isArray(options.middlewares) ? options.middlewares[action] : options?.middlewares
+
+                this.add(
+                    method,
+                    `${basePath}${path}`,
+                    [controller, action],
+                    Array.isArray(actionMiddlewares)
+                        ? actionMiddlewares
+                        : actionMiddlewares ? [actionMiddlewares] : undefined
+                )
             }
         }
     }
@@ -137,7 +156,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static get (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static get (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('get', path, handler, middlewares)
     }
 
@@ -147,7 +166,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static post (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static post (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('post', path, handler, middlewares)
     }
 
@@ -157,7 +176,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static put (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static put (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('put', path, handler, middlewares)
     }
 
@@ -167,7 +186,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static delete (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static delete (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('delete', path, handler, middlewares)
     }
 
@@ -177,7 +196,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static patch (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static patch (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('patch', path, handler, middlewares)
     }
 
@@ -187,7 +206,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static options (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static options (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('options', path, handler, middlewares)
     }
 
@@ -197,7 +216,7 @@ export class Router {
      * @param handler - Route handler
      * @param middlewares - Middleware functions
      */
-    static head (path: string, handler: Handler, middlewares?: Middleware[]): void {
+    static head (path: string, handler: Handler, middlewares?: Middleware[] | Middleware): void {
         this.add('head', path, handler, middlewares)
     }
 
