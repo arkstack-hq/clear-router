@@ -59,6 +59,7 @@
         "lint": "eslint",
         "test:esm": "vitest tests/esm.test.ts",
         "test:ts": "vitest tests/typescript.test.ts",
+        "test:coverage": "vitest run --coverage",
         "example": "tsx example/express/index.ts",
         "example:esm": "tsx example/express/esm.ts",
         "example:ts": "tsx example/express/typescript.ts",
