@@ -261,6 +261,35 @@ describe('Express Routing - TypeScript', () => {
         expect(response.body.grouped).toBe(true)
     })
 
+    test('should keep group context isolated across async registration tasks', async () => {
+        await Router.group('/api', async () => {
+            void (async () => {
+                await new Promise<void>(resolve => setTimeout(resolve, 20))
+                Router.get('/late', ({ res }: HttpContext) => {
+                    res.json({ late: true })
+                })
+            })()
+        })
+
+        await Router.group('/', async () => {
+            await new Promise<void>(resolve => setTimeout(resolve, 5))
+            Router.get('/home', ({ res }: HttpContext) => {
+                res.json({ home: true })
+            })
+        })
+
+        await new Promise<void>(resolve => setTimeout(resolve, 35))
+        await setupApp()
+
+        const home = await request(app).get('/home')
+        expect(home.status).toBe(200)
+        expect(home.body.home).toBe(true)
+
+        const late = await request(app).get('/api/late')
+        expect(late.status).toBe(200)
+        expect(late.body.late).toBe(true)
+    })
+
     test('should handle typed error in middleware', async () => {
         const errorMiddleware = (
             req: Request,
@@ -551,6 +580,37 @@ describe('H3 Routing - TypeScript', () => {
             .fetch(new global.Request(new URL('http://localhost/api/async-group'), { method: 'GET' }))
             .then(res => res.json())
         expect(response.grouped).toBe(true)
+    })
+
+    test('should keep h3 group context isolated across async registration tasks', async () => {
+        await H3Router.group('/api', async () => {
+            void (async () => {
+                await new Promise<void>(resolve => setTimeout(resolve, 20))
+                H3Router.get('/late', () => {
+                    return { late: true }
+                })
+            })()
+        })
+
+        await H3Router.group('/', async () => {
+            await new Promise<void>(resolve => setTimeout(resolve, 5))
+            H3Router.get('/home', () => {
+                return { home: true }
+            })
+        })
+
+        await new Promise<void>(resolve => setTimeout(resolve, 35))
+        setupApp()
+
+        const home = await router
+            .fetch(new global.Request(new URL('http://localhost/home'), { method: 'GET' }))
+            .then(res => res.json())
+        expect(home.home).toBe(true)
+
+        const late = await router
+            .fetch(new global.Request(new URL('http://localhost/api/late'), { method: 'GET' }))
+            .then(res => res.json())
+        expect(late.late).toBe(true)
     })
 
     test('should handle typed error in middleware', async () => {

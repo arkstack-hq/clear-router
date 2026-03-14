@@ -1,6 +1,7 @@
 import { ApiResourceMiddleware, ControllerAction, HttpMethod } from 'types/basic'
 import { Handler, HttpContext, Middleware, RouteHandler } from 'types/express'
 
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { ClearRequest } from 'src/ClearRequest'
 import { Controller } from 'src/Controller'
 import { Router as ExpressRouter } from 'express'
@@ -14,6 +15,11 @@ import { Route } from 'src/Route'
  * @repository https://github.com/toneflix/clear-router
  */
 export class Router {
+    private static readonly groupContext = new AsyncLocalStorage<{
+        prefix: string
+        groupMiddlewares: Middleware[]
+    }>()
+
     /**
      * All registered routes
      */
@@ -69,18 +75,22 @@ export class Router {
         handler: Handler,
         middlewares?: Middleware[] | Middleware
     ): void {
+        const context = this.groupContext.getStore()
+        const activePrefix = context?.prefix ?? this.prefix
+        const activeGroupMiddlewares = context?.groupMiddlewares ?? this.groupMiddlewares
+
         methods = Array.isArray(methods) ? methods : [methods]
         middlewares = middlewares
             ? (Array.isArray(middlewares) ? middlewares : [middlewares])
             : undefined
 
-        const fullPath = this.normalizePath(`${this.prefix}/${path}`)
+        const fullPath = this.normalizePath(`${activePrefix}/${path}`)
 
         const route = new Route<HttpContext, Middleware>(
             methods.includes('options') ? methods : methods.concat('options'),
             fullPath,
             handler as never,
-            [...this.globalMiddlewares, ...this.groupMiddlewares, ...(middlewares || [])]
+            [...this.globalMiddlewares, ...activeGroupMiddlewares, ...(middlewares || [])]
         )
 
         if (
@@ -232,22 +242,22 @@ export class Router {
         callback: () => void | Promise<void>,
         middlewares?: Middleware[]
     ): Promise<void> {
-        const previousPrefix = this.prefix
-        const previousMiddlewares = this.groupMiddlewares
+        const context = this.groupContext.getStore()
+        const previousPrefix = context?.prefix ?? this.prefix
+        const previousMiddlewares = context?.groupMiddlewares ?? this.groupMiddlewares
 
         const fullPrefix = [previousPrefix, prefix]
             .filter(Boolean)
             .join('/')
 
-        this.prefix = this.normalizePath(fullPrefix)
-        this.groupMiddlewares = [...previousMiddlewares, ...(middlewares || [])]
-
-        try {
-            await Promise.resolve(callback())
-        } finally {
-            this.prefix = previousPrefix
-            this.groupMiddlewares = previousMiddlewares
+        const nextContext = {
+            prefix: this.normalizePath(fullPrefix),
+            groupMiddlewares: [...previousMiddlewares, ...(middlewares || [])],
         }
+
+        await this.groupContext.run(nextContext, async () => {
+            await Promise.resolve(callback())
+        })
     }
 
     /**
