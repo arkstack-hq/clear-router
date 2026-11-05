@@ -160,4 +160,89 @@ describe('Fastify App (JS)', () => {
 
         expect(res.statusCode).toBe(404)
     })
+
+    it('shares one POST route between method overrides on the same path', async () => {
+        Router.add(['put', 'patch'], '/api/users/:id', ({ req }) => ({ updated: (req.params as Record<string, string>).id }))
+        Router.delete('/api/users/:id', () => ({ deleted: true }))
+
+        await setupApp()
+
+        const patch = await app.inject({ method: 'POST', url: '/api/users/1', payload: { _method: 'PATCH' } })
+        const remove = await app.inject({ method: 'POST', url: '/api/users/1', payload: { _method: 'DELETE' } })
+        const missing = await app.inject({ method: 'POST', url: '/api/users/1', payload: {} })
+
+        expect(patch.json()).toEqual({ updated: '1' })
+        expect(remove.json()).toEqual({ deleted: true })
+        expect(missing.statusCode).toBe(404)
+    })
+
+    it('keeps a POST route next to method overrides on the same path', async () => {
+        Router.post('/api/posts', () => ({ created: true }))
+        Router.put('/api/posts', () => ({ replaced: true }))
+
+        await setupApp()
+
+        const create = await app.inject({ method: 'POST', url: '/api/posts', payload: {} })
+        const replace = await app.inject({ method: 'POST', url: '/api/posts', payload: { _method: 'PUT' } })
+
+        expect(create.json()).toEqual({ created: true })
+        expect(replace.json()).toEqual({ replaced: true })
+    })
+
+    it('runs only the matching route middleware for an overridden POST', async () => {
+        const seen: string[] = []
+
+        Router.put('/api/items/:id', () => ({ ok: 'put' }), [async () => void seen.push('put')])
+        Router.delete('/api/items/:id', () => ({ ok: 'delete' }), [
+            (_req: unknown, _reply: unknown, next: () => void) => {
+                seen.push('delete')
+                next()
+            },
+        ])
+
+        await setupApp()
+
+        const res = await app.inject({ method: 'POST', url: '/api/items/1', payload: { _method: 'DELETE' } })
+
+        expect(res.json()).toEqual({ ok: 'delete' })
+        expect(seen).toEqual(['delete'])
+    })
+
+    it('supports apiResource controllers', async () => {
+        class UserController {
+            index () {
+                return { action: 'index' }
+            }
+
+            create () {
+                return { action: 'create' }
+            }
+
+            show () {
+                return { action: 'show' }
+            }
+
+            update () {
+                return { action: 'update' }
+            }
+
+            destroy () {
+                return { action: 'destroy' }
+            }
+        }
+
+        Router.apiResource('/users', UserController as never)
+
+        await setupApp()
+
+        const update = await app.inject({ method: 'PUT', url: '/users/1', payload: {} })
+        const viaOverride = await app.inject({ method: 'POST', url: '/users/1', payload: { _method: 'PUT' } })
+        const destroy = await app.inject({ method: 'POST', url: '/users/1', payload: { _method: 'DELETE' } })
+        const store = await app.inject({ method: 'POST', url: '/users', payload: {} })
+
+        expect(update.json()).toEqual({ action: 'update' })
+        expect(viaOverride.json()).toEqual({ action: 'update' })
+        expect(destroy.json()).toEqual({ action: 'destroy' })
+        expect(store.json()).toEqual({ action: 'create' })
+    })
 })
