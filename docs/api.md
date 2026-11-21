@@ -635,6 +635,8 @@ For controller instance handlers, the router hydrates request data on `this` bef
 - `this.params`
 - `this.clearRequest`
 
+One instance serves every request to its route, so these are request-scoped accessors rather than plain properties: they always return the request being handled, even after an `await` while other requests run. Values a handler assigns to them stay with its own request. Don't redeclare them as class fields in a subclass (for example `body: RequestData = {}`), since an own property would hide the accessor; use `declare body: MyBody` to narrow the type instead.
+
 #### Custom Controller Pattern (Recommended)
 
 You can extend the clear-router `Controller` to create an app-specific base controller and share behavior across feature controllers.

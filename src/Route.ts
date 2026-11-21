@@ -4,6 +4,7 @@ import type { ClearRequest } from './ClearRequest'
 import type { Middleware as EMiddleware } from './types/express'
 import type { Middleware as HMiddleware } from './types/h3'
 import { RouteParameter } from './Contracts'
+import { defineRequestBindings } from './core/requestBindings'
 
 /**
  * Parse the placeholder parameters declared in a domain/host pattern such as
@@ -53,11 +54,12 @@ interface CurrentRouteResolvers {
  * @repository https://github.com/arkstack-hq/clear-router
  */
 export class Route<X = any, M = HMiddleware | EMiddleware, H = any> {
-    ctx!: X
-    body: RequestData = {}
-    query: RequestData = {}
-    params: RequestData = {}
-    clearRequest!: ClearRequest
+    // Accessors scoped to the active request (see defineRequestBindings below).
+    declare ctx: X
+    declare body: RequestData
+    declare query: RequestData
+    declare params: RequestData
+    declare clearRequest: ClearRequest
 
     methods: HttpMethod[]
     path: string
@@ -354,3 +356,9 @@ export class Route<X = any, M = HMiddleware | EMiddleware, H = any> {
         return `//${this.resolveDomainHost(params)}${resolved}`
     }
 }
+
+defineRequestBindings(Route.prototype, {
+    body: () => ({}),
+    query: () => ({}),
+    params: () => ({}),
+})
