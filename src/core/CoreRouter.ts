@@ -10,6 +10,7 @@ import type {
 import { Container, getBindingMetadataFromTargets, getDesignParamTypes, getStandardMetadata, isClass } from './bindings'
 
 import { AsyncLocalStorage } from 'node:async_hooks'
+import { runWithRequest } from './requestBindings'
 import { Controller } from '../Controller'
 import { Request as CoreRequest } from './Request'
 import { Response as CoreResponse } from './Response'
@@ -1586,7 +1587,7 @@ export abstract class CoreRouter {
         this.ensureState()
         const requestContainer = this.container.createRequestScope(ctx)
 
-        return Container.run(requestContainer, () => this.pluginRequestContext.run(this.createPluginRequestContext(ctx), async () => {
+        return runWithRequest(ctx, () => Container.run(requestContainer, () => this.pluginRequestContext.run(this.createPluginRequestContext(ctx), async () => {
             await this.pluginsReady()
             await this.resolvePluginHttpCtx(ctx)
 
@@ -1637,7 +1638,7 @@ export abstract class CoreRouter {
             }
 
             return (handlerFunction as any)(...args)
-        }))
+        })))
     }
 
     protected static bindRequestToInstance(
